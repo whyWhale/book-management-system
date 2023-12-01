@@ -1,0 +1,40 @@
+name: book-management-system-ci
+
+on:
+  push:
+    branches:
+      - product
+
+jobs:
+  build-with-gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: production 브랜치로 이동
+        uses: actions/checkout@v3
+        with:
+          ref: product
+
+      - name: JDK 17 설치
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x ./gradlew
+
+      - name: 프로젝트 빌드
+        run: ./gradlew clean build -x test
+
+      - name: AWS credential 설정
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.CICD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.CICD_SECRET_KEY }}
+
+      - name: S3 실행파일 적재
+        run: aws deploy push --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION }} --ignore-hidden-files --s3-location s3://${{ secrets.AWS_S3_BUCKET }}/book-management-system/$GITHUB_SHA.zip --source .
+
+      - name: CodeDeploy가 EC2에 배포
+        run: aws deploy create-deployment --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION }} --deployment-config-name CodeDeployDefault.AllAtOnce --deployment-group-name ${{ secrets.AWS_CODE_DEPLOY_GROUP }} --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},key=book-management/$GITHUB_SHA.zip,bundleType=zip
