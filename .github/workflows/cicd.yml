@@ -34,7 +34,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.CICD_SECRET_KEY }}
 
       - name: S3 실행파일 적재
-        run: aws deploy push --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION }} --ignore-hidden-files --s3-location s3://${{ secrets.AWS_S3_BUCKET }}/book-management-system/$GITHUB_SHA.zip --source .
-
-      - name: CodeDeploy가 EC2에 배포
-        run: aws deploy create-deployment --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION }} --deployment-config-name CodeDeployDefault.AllAtOnce --deployment-group-name ${{ secrets.AWS_CODE_DEPLOY_GROUP }} --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},key=book-management/$GITHUB_SHA.zip,bundleType=zip
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET}}
+        run: aws deploy push --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION }} --ignore-hidden-files --s3-location s3://$AWS_S3_BUCKET/book-management-system/$GITHUB_SHA.zip --source .
